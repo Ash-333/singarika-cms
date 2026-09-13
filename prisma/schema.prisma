@@ -1,0 +1,315 @@
+// Singarika CMS — ethnic wear store
+// Datasource: PostgreSQL, Client: Prisma
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+}
+
+enum ProductStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum StockMovementReason {
+  PURCHASE      // stock received from supplier
+  SALE          // sold on storefront
+  RETURN        // customer return back into stock
+  ADJUSTMENT    // manual correction / stock take
+  DAMAGE        // written off
+  RESERVATION   // held for an order
+  RELEASE       // reservation released
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  role         Role     @default(EDITOR)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  posts          BlogPost[]
+  stockMovements StockMovement[]
+
+  @@map("users")
+}
+
+// ---------------------------------------------------------------- Categories
+
+model Category {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+
+  // Self-referencing tree: Sarees > Silk Sarees > Kanjivaram
+  parentId String?
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children Category[] @relation("CategoryTree")
+
+  imageId String?
+  image   Media?  @relation(fields: [imageId], references: [id], onDelete: SetNull)
+
+  position    Int     @default(0)
+  isActive    Boolean @default(true)
+  metaTitle       String?
+  metaDescription String?
+
+  products ProductCategory[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([parentId])
+  @@index([isActive])
+  @@map("categories")
+}
+
+model ProductCategory {
+  productId  String
+  categoryId String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([productId, categoryId])
+  @@index([categoryId])
+  @@map("product_categories")
+}
+
+// ------------------------------------------------------------------ Products
+
+model Product {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String? @db.Text
+  shortDescription String?
+
+  status      ProductStatus @default(DRAFT)
+  isFeatured  Boolean       @default(false)
+
+  // Money is stored in paise (integer) to avoid float rounding errors.
+  basePrice     Int
+  compareAtPrice Int?
+  costPrice      Int?
+
+  // Ethnic-wear specific attributes, used for storefront filters.
+  fabric     String?
+  workType   String?   // zari, chikankari, mirror work, block print...
+  occasion   String?   // bridal, festive, casual, party
+  color      String?
+  pattern    String?
+  careInstructions String? @db.Text
+  countryOfOrigin  String? @default("India")
+
+  brand      String?
+  hsnCode    String?
+  taxRatePct Int     @default(5) // GST % applied on sale
+
+  metaTitle       String?
+  metaDescription String?
+
+  categories ProductCategory[]
+  variants   ProductVariant[]
+  images     ProductImage[]
+  tags       TagOnProduct[]
+
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status])
+  @@index([isFeatured])
+  @@index([fabric])
+  @@index([occasion])
+  @@map("products")
+}
+
+model ProductVariant {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  sku       String  @unique
+  size      String? // Free size, S, M, L, XL, 38, 40...
+  color     String?
+  // Any extra axis (blouse stitched/unstitched, dupatta included) lives here.
+  optionLabel String?
+  optionValue String?
+
+  price      Int?   // overrides Product.basePrice when set
+  weightGram Int?
+
+  // Inventory
+  stock         Int     @default(0)
+  reservedStock Int     @default(0)
+  lowStockAlert Int     @default(3)
+  allowBackorder Boolean @default(false)
+
+  position  Int     @default(0)
+  isActive  Boolean @default(true)
+
+  movements StockMovement[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@index([stock])
+  @@map("product_variants")
+}
+
+model StockMovement {
+  id        String              @id @default(cuid())
+  variantId String
+  variant   ProductVariant      @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  reason    StockMovementReason
+  // Signed: +10 received, -1 sold.
+  quantity  Int
+  stockAfter Int
+  note      String?
+  reference String? // order id, invoice no, stock-take id
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([variantId, createdAt])
+  @@map("stock_movements")
+}
+
+// --------------------------------------------------------------------- Media
+
+model Media {
+  id         String  @id @default(cuid())
+  publicId   String  @unique // Cloudinary public_id
+  url        String
+  secureUrl  String
+  format     String?
+  width      Int?
+  height     Int?
+  bytes      Int?
+  folder     String?
+  altText    String?
+  createdAt  DateTime @default(now())
+
+  productImages ProductImage[]
+  categories    Category[]
+  postCovers    BlogPost[]
+
+  @@map("media")
+}
+
+model ProductImage {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  mediaId   String
+  media     Media   @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  altText   String?
+  position  Int     @default(0)
+
+  @@unique([productId, mediaId])
+  @@index([productId])
+  @@map("product_images")
+}
+
+// --------------------------------------------------------------------- Blog
+
+model BlogPost {
+  id       String     @id @default(cuid())
+  title    String
+  slug     String     @unique
+  excerpt  String?
+  content  String     @db.Text // HTML from the editor
+  status   PostStatus @default(DRAFT)
+
+  coverImageId String?
+  coverImage   Media?  @relation(fields: [coverImageId], references: [id], onDelete: SetNull)
+
+  authorId String?
+  author   User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  categoryId String?
+  category   BlogCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  tags TagOnPost[]
+
+  readingMinutes Int? 
+  metaTitle       String?
+  metaDescription String?
+
+  publishedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, publishedAt])
+  @@map("blog_posts")
+}
+
+model BlogCategory {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  posts       BlogPost[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("blog_categories")
+}
+
+model Tag {
+  id       String @id @default(cuid())
+  name     String
+  slug     String @unique
+
+  posts    TagOnPost[]
+  products TagOnProduct[]
+
+  createdAt DateTime @default(now())
+
+  @@map("tags")
+}
+
+model TagOnPost {
+  postId String
+  tagId  String
+  post   BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@index([tagId])
+  @@map("tags_on_posts")
+}
+
+model TagOnProduct {
+  productId String
+  tagId     String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+  @@index([tagId])
+  @@map("tags_on_products")
+}
