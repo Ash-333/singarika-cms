@@ -3,13 +3,13 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Singarika CMS",
-  description: "Content and catalogue manager for the Singarika ethnic wear store",
+  description: "Catalogue, stock and blog manager for the Singarika ethnic wear store, Nepal",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="bg-stone-50 text-stone-900 antialiased">{children}</body>
+      <body className="bg-canvas text-ink antialiased">{children}</body>
     </html>
   );
 }

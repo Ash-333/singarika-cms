@@ -4,7 +4,8 @@ import Image from "next/image";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DeleteButton from "@/components/delete-button";
-import { EmptyState } from "@/components/ui";
+import { Button, EmptyState, Input, Notice } from "@/components/ui";
+import { PlusIcon } from "@/components/icons";
 
 type Item = {
   id: string;
@@ -36,7 +37,7 @@ export default function MediaLibrary({ items }: { items: Item[] }) {
     setUploading(false);
 
     if (!res.ok) {
-      setError(json?.error?.message ?? "Upload failed");
+      setError(json?.error?.message ?? "Those photos could not be uploaded.");
       return;
     }
     router.refresh();
@@ -52,80 +53,97 @@ export default function MediaLibrary({ items }: { items: Item[] }) {
     router.refresh();
   }
 
+  const uploadButton = (
+    <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white transition hover:bg-primary-hover">
+      <PlusIcon className="size-4" />
+      {uploading ? "Uploading…" : "Upload photos"}
+      <input
+        type="file"
+        accept="image/*"
+        multiple
+        hidden
+        disabled={uploading}
+        onChange={(e) => e.target.files && upload(e.target.files)}
+      />
+    </label>
+  );
+
   return (
     <div>
-      <div className="mb-4 flex items-center gap-3">
-        <label className="cursor-pointer rounded-lg bg-pink-800 px-4 py-2 text-sm font-medium text-white hover:bg-pink-900">
-          {uploading ? "Uploading…" : "Upload images"}
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            hidden
-            disabled={uploading}
-            onChange={(e) => e.target.files && upload(e.target.files)}
-          />
-        </label>
-        <p className="text-sm text-stone-500">JPEG, PNG, WebP or AVIF up to 8MB each.</p>
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        {uploadButton}
+        <p className="text-sm text-muted">JPEG, PNG, WebP or AVIF, up to 8MB each.</p>
       </div>
 
-      {error && (
-        <p className="mb-4 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
-      )}
+      {error && <Notice className="mb-5">{error}</Notice>}
 
       {items.length === 0 ? (
-        <EmptyState title="No images yet" hint="Upload product or blog imagery to get started." />
+        <EmptyState
+          title="No photos yet"
+          hint="Upload product and blog photos once, then pick them wherever you need them."
+        />
       ) : (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-6">
+        <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
           {items.map((m) => (
-            <div key={m.id} className="rounded-xl border border-stone-200 bg-white p-2">
+            <li
+              key={m.id}
+              className="overflow-hidden rounded-xl border border-hairline bg-surface"
+            >
               <Image
                 src={m.secureUrl}
                 alt={m.altText ?? ""}
-                width={200}
-                height={260}
-                className="h-40 w-full rounded-lg object-cover"
+                width={240}
+                height={300}
+                className="h-40 w-full bg-sunk object-cover"
               />
-              <div className="px-1 pb-1 pt-2 text-xs text-stone-500">
-                <p className="truncate">{m.altText || "No alt text"}</p>
-                <p className="mt-0.5 text-stone-400">
-                  {m.width}×{m.height} · {m.bytes ? `${Math.round(m.bytes / 1024)}KB` : "—"}
-                  {m.usageCount > 0 && ` · used ${m.usageCount}×`}
+              <div className="space-y-1 p-3 text-xs">
+                <p className={`truncate ${m.altText ? "text-ink" : "text-faint"}`}>
+                  {m.altText || "No description"}
+                </p>
+                <p className="text-muted">
+                  {m.width}×{m.height}
+                  {m.bytes ? ` · ${Math.round(m.bytes / 1024)}KB` : ""}
+                  {m.usageCount > 0 ? ` · used ${m.usageCount}×` : " · unused"}
                 </p>
 
                 {openId === m.id ? (
                   <form
-                    className="mt-2 flex gap-1"
+                    className="flex gap-1.5 pt-1"
                     onSubmit={(e) => {
                       e.preventDefault();
                       saveAlt(m.id, String(new FormData(e.currentTarget).get("alt") ?? ""));
                     }}
                   >
-                    <input
+                    <Input
                       name="alt"
+                      autoFocus
+                      aria-label="Photo description"
                       defaultValue={m.altText ?? ""}
-                      className="w-full rounded border border-stone-300 px-1.5 py-1"
+                      className="px-2 py-1.5 text-xs"
                     />
-                    <button type="submit" className="text-pink-800">
+                    <Button type="submit" size="sm" className="px-2.5 py-1.5 text-xs">
                       Save
-                    </button>
+                    </Button>
                   </form>
                 ) : (
-                  <div className="mt-2 flex items-center justify-between">
+                  <div className="flex items-center justify-between pt-1">
                     <button
                       type="button"
                       onClick={() => setOpenId(m.id)}
-                      className="text-pink-800 hover:underline"
+                      className="rounded px-1.5 py-1 font-medium text-primary hover:bg-primary-soft"
                     >
-                      Alt text
+                      {m.altText ? "Edit description" : "Add description"}
                     </button>
-                    <DeleteButton endpoint={`/api/admin/media/${m.id}`} label="Delete image?" />
+                    <DeleteButton
+                      endpoint={`/api/admin/media/${m.id}`}
+                      label="Delete this photo"
+                    />
                   </div>
                 )}
               </div>
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );

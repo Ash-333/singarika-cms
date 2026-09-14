@@ -1,18 +1,23 @@
 import Link from "next/link";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { lowStockVariants } from "@/lib/services/inventory";
-import { Badge, Card, PageHeader } from "@/components/ui";
+import { Badge, Card, LinkButton, PageHeader } from "@/components/ui";
+import { AlertIcon, PlusIcon } from "@/components/icons";
+import { relativeTime } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const [products, activeProducts, categories, posts, publishedPosts, media, stock, lowStock, recent] =
+  const session = await auth();
+
+  const [products, activeProducts, categories, posts, draftPosts, media, stock, lowStock, recent] =
     await Promise.all([
       prisma.product.count(),
       prisma.product.count({ where: { status: "ACTIVE" } }),
       prisma.category.count(),
       prisma.blogPost.count(),
-      prisma.blogPost.count({ where: { status: "PUBLISHED" } }),
+      prisma.blogPost.count({ where: { status: "DRAFT" } }),
       prisma.media.count(),
       prisma.productVariant.aggregate({ _sum: { stock: true } }),
       lowStockVariants(8),
@@ -26,47 +31,106 @@ export default async function DashboardPage() {
       }),
     ]);
 
+  const firstName = (session?.user?.name ?? "").split(" ")[0];
+
   const tiles = [
-    { label: "Products", value: products, hint: `${activeProducts} live`, href: "/products" },
-    { label: "Categories", value: categories, hint: "catalogue tree", href: "/categories" },
-    { label: "Units in stock", value: stock._sum.stock ?? 0, hint: `${lowStock.length} low`, href: "/inventory" },
-    { label: "Blog posts", value: posts, hint: `${publishedPosts} published`, href: "/blog" },
-    { label: "Media", value: media, hint: "Cloudinary assets", href: "/media" },
+    {
+      label: "Products",
+      value: products,
+      hint: `${activeProducts} on the storefront`,
+      href: "/products",
+    },
+    {
+      label: "Units in stock",
+      value: stock._sum.stock ?? 0,
+      hint: `across ${categories} categories`,
+      href: "/inventory",
+    },
+    {
+      label: "Needs restocking",
+      value: lowStock.length,
+      hint: lowStock.length ? "low or sold out" : "all healthy",
+      href: "/inventory?lowStock=true",
+      alert: lowStock.length > 0,
+    },
+    {
+      label: "Blog posts",
+      value: posts,
+      hint: draftPosts ? `${draftPosts} still in draft` : "nothing pending",
+      href: "/blog",
+    },
+    { label: "Photos", value: media, hint: "in the library", href: "/media" },
   ];
 
   return (
     <>
-      <PageHeader title="Dashboard" subtitle="Catalogue and content at a glance" />
+      <PageHeader
+        title={firstName ? `Namaste, ${firstName}` : "Dashboard"}
+        subtitle="Where the shop stands today."
+        action={
+          <>
+            <LinkButton href="/products/new" size="sm">
+              <PlusIcon className="size-4" />
+              Add product
+            </LinkButton>
+            <LinkButton href="/blog/new" variant="secondary" size="sm">
+              Write a post
+            </LinkButton>
+          </>
+        }
+      />
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {tiles.map((t) => (
-          <Link key={t.label} href={t.href}>
-            <Card className="transition hover:border-pink-300">
-              <p className="text-sm text-stone-500">{t.label}</p>
-              <p className="mt-1 text-3xl font-semibold tabular-nums">{t.value}</p>
-              <p className="mt-1 text-xs text-stone-400">{t.hint}</p>
+          <Link key={t.label} href={t.href} className="group">
+            <Card
+              className={`h-full transition group-hover:border-primary-ring ${
+                t.alert ? "border-danger/30 bg-danger-soft" : ""
+              }`}
+            >
+              <p className="flex items-center gap-1.5 text-sm text-muted">
+                {t.alert && <AlertIcon className="size-4 text-danger" />}
+                {t.label}
+              </p>
+              <p
+                className={`mt-2 font-display text-4xl leading-none tnum ${
+                  t.alert ? "text-danger" : "text-ink"
+                }`}
+              >
+                {t.value}
+              </p>
+              <p className="mt-2 text-xs text-muted">{t.hint}</p>
             </Card>
           </Link>
         ))}
       </div>
 
-      <div className="mt-6 grid gap-4 lg:grid-cols-2">
-        <Card>
-          <h2 className="mb-3 font-medium">Low stock</h2>
+      <div className="mt-6 grid gap-5 lg:grid-cols-5">
+        <Card padded={false} className="lg:col-span-3">
+          <div className="flex items-center justify-between border-b border-hairline px-5 py-4">
+            <h2 className="font-display text-lg text-ink">Needs restocking</h2>
+            <Link href="/inventory" className="text-sm font-medium text-primary hover:underline">
+              Manage stock
+            </Link>
+          </div>
           {lowStock.length === 0 ? (
-            <p className="text-sm text-stone-500">Everything is comfortably stocked.</p>
+            <p className="px-5 py-8 text-center text-sm text-muted">
+              Every variant is above its alert level.
+            </p>
           ) : (
-            <ul className="divide-y divide-stone-100 text-sm">
+            <ul className="divide-y divide-hairline">
               {lowStock.map((v) => (
-                <li key={v.id} className="flex items-center justify-between py-2">
-                  <span>
-                    <span className="font-medium">{v.productName}</span>
-                    <span className="ml-2 text-stone-400">
-                      {[v.size, v.color].filter(Boolean).join(" / ") || v.sku}
+                <li key={v.id} className="flex items-center gap-3 px-5 py-3">
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-ink">
+                      {v.productName}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-muted">
+                      {[v.size, v.color].filter(Boolean).join(" · ") || v.sku}
                     </span>
                   </span>
                   <Badge tone={v.stock === 0 ? "OUT" : "LOW"}>
-                    {v.stock === 0 ? "Out of stock" : `${v.stock} left`}
+                    {v.stock === 0 ? "Sold out" : `${v.stock} left`}
                   </Badge>
                 </li>
               ))}
@@ -74,24 +138,34 @@ export default async function DashboardPage() {
           )}
         </Card>
 
-        <Card>
-          <h2 className="mb-3 font-medium">Recent stock movements</h2>
+        <Card padded={false} className="lg:col-span-2">
+          <div className="border-b border-hairline px-5 py-4">
+            <h2 className="font-display text-lg text-ink">Recent stock changes</h2>
+          </div>
           {recent.length === 0 ? (
-            <p className="text-sm text-stone-500">No movements recorded yet.</p>
+            <p className="px-5 py-8 text-center text-sm text-muted">
+              Nothing has moved in or out yet.
+            </p>
           ) : (
-            <ul className="divide-y divide-stone-100 text-sm">
+            <ul className="divide-y divide-hairline">
               {recent.map((m) => (
-                <li key={m.id} className="flex items-center justify-between py-2">
-                  <span className="min-w-0 truncate">
-                    <span className="font-medium">{m.variant.product.name}</span>
-                    <span className="ml-2 text-stone-400">{m.variant.sku}</span>
-                  </span>
-                  <span className="ml-3 shrink-0 text-stone-500">
-                    <span className={m.quantity > 0 ? "text-emerald-700" : "text-rose-700"}>
+                <li key={m.id} className="px-5 py-3">
+                  <div className="flex items-baseline gap-3">
+                    <span className="min-w-0 flex-1 truncate text-sm text-ink">
+                      {m.variant.product.name}
+                    </span>
+                    <span
+                      className={`shrink-0 text-sm font-medium tnum ${
+                        m.quantity > 0 ? "text-success" : "text-danger"
+                      }`}
+                    >
                       {m.quantity > 0 ? `+${m.quantity}` : m.quantity}
                     </span>
-                    <span className="ml-2 text-xs uppercase tracking-wide">{m.reason}</span>
-                  </span>
+                  </div>
+                  <p className="mt-0.5 text-xs text-muted">
+                    {m.reason.charAt(0) + m.reason.slice(1).toLowerCase()} ·{" "}
+                    {m.user?.name ?? "System"} · {relativeTime(m.createdAt)}
+                  </p>
                 </li>
               ))}
             </ul>

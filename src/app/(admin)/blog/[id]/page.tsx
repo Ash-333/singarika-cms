@@ -1,7 +1,9 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import PostForm from "@/components/post-form";
-import { PageHeader } from "@/components/ui";
+import { Badge, PageHeader } from "@/components/ui";
+import { formatDate } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +22,14 @@ export default async function EditPostPage({ params }: { params: Promise<{ id: s
 
   return (
     <>
-      <PageHeader title={post.title} subtitle={`/${post.slug}`} />
+      <Link href="/blog" className="mb-4 inline-block text-sm text-muted hover:text-ink">
+        ← Blog
+      </Link>
+      <PageHeader
+        title={post.title}
+        subtitle={`Last saved ${formatDate(post.updatedAt)} · /${post.slug}`}
+        action={<Badge>{post.status}</Badge>}
+      />
       <PostForm
         categories={categories}
         initial={{

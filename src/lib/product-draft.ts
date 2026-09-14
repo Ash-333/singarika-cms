@@ -1,8 +1,8 @@
 import type { ProductDraft } from "@/components/product-form";
-import { paiseToRupees } from "@/lib/money";
+import { paisaToRupees } from "@/lib/money";
 
 const str = (v: unknown) => (v == null ? "" : String(v));
-const rupees = (v: number | null | undefined) => (v == null ? "" : String(paiseToRupees(v)));
+const rupees = (v: number | null | undefined) => (v == null ? "" : String(paisaToRupees(v)));
 
 export function blankProductDraft(): ProductDraft {
   return {
@@ -23,7 +23,7 @@ export function blankProductDraft(): ProductDraft {
     careInstructions: "",
     brand: "",
     hsnCode: "",
-    taxRatePct: "5",
+    taxRatePct: "13",
     metaTitle: "",
     metaDescription: "",
     categoryIds: [],
@@ -58,7 +58,7 @@ export function toProductDraft(p: any): ProductDraft {
     description: str(p.description),
     status: p.status,
     isFeatured: p.isFeatured,
-    basePrice: String(paiseToRupees(p.basePrice)),
+    basePrice: String(paisaToRupees(p.basePrice)),
     compareAtPrice: rupees(p.compareAtPrice),
     costPrice: rupees(p.costPrice),
     fabric: str(p.fabric),

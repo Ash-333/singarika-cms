@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { paiseToRupees } from "@/lib/money";
+import { paisaToRupees } from "@/lib/money";
 import { corsPreflight, publicJson } from "@/lib/public-response";
 
 export const dynamic = "force-dynamic";
@@ -38,8 +38,8 @@ export async function GET() {
         workType: facet(workTypes, "workType"),
         tags: tags.map((t) => ({ value: t.slug, label: t.name, count: t._count.products })),
         price: {
-          min: paiseToRupees(price._min.basePrice ?? 0),
-          max: paiseToRupees(price._max.basePrice ?? 0),
+          min: paisaToRupees(price._min.basePrice ?? 0),
+          max: paisaToRupees(price._max.basePrice ?? 0),
         },
       },
     },

@@ -17,7 +17,10 @@ export default async function UsersPage() {
 
   return (
     <>
-      <PageHeader title="Users" subtitle="Who can sign in to the CMS" />
+      <PageHeader
+        title="Team"
+        subtitle="Who can sign in, and what they are allowed to change."
+      />
       <UserManager users={users} currentUserId={session.user.id} />
     </>
   );

@@ -27,11 +27,12 @@ async function main() {
 
   // Catalogue tree
   const tree: Record<string, string[]> = {
-    Sarees: ["Kanjivaram Silk", "Banarasi Silk", "Cotton Sarees", "Georgette Sarees"],
-    "Lehenga Cholis": ["Bridal Lehengas", "Festive Lehengas"],
-    "Kurta Sets": ["Anarkali", "Straight Kurta Sets", "Palazzo Sets"],
-    "Salwar Suits": ["Unstitched Suits", "Readymade Suits"],
-    Dupattas: [],
+    "Kurtha Suruwal": ["Dhaka Kurtha Suruwal", "Cotton Kurtha Suruwal", "Party Wear"],
+    Sari: ["Dhaka Sari", "Cotton Sari", "Silk Sari"],
+    "Daura Suruwal": ["Daura Suruwal Sets", "Dhaka Topi"],
+    "Gunyu Cholo": [],
+    "Haku Patasi": [],
+    "Pashmina & Shawls": ["Pashmina Shawls", "Yak Wool Shawls"],
   };
 
   let position = 0;
@@ -51,7 +52,7 @@ async function main() {
   }
   console.log("Categories seeded");
 
-  for (const name of ["Styling Guides", "Fabric Care", "Lookbook", "Traditions"]) {
+  for (const name of ["Festival Styling", "Fabric Care", "Lookbook", "Nepali Traditions"]) {
     await prisma.blogCategory.upsert({
       where: { slug: slug(name) },
       update: {},
@@ -61,38 +62,40 @@ async function main() {
   console.log("Blog categories seeded");
 
   // One demo product so the public API returns something immediately.
-  const kanjivaram = await prisma.category.findUnique({ where: { slug: slug("Kanjivaram Silk") } });
-  const demoSlug = "kanjivaram-silk-saree-with-zari-border";
+  const dhakaKurtha = await prisma.category.findUnique({
+    where: { slug: slug("Dhaka Kurtha Suruwal") },
+  });
+  const demoSlug = "dhaka-kurtha-suruwal-with-patuka";
 
   if (!(await prisma.product.findUnique({ where: { slug: demoSlug } }))) {
     const product = await prisma.product.create({
       data: {
-        name: "Kanjivaram Silk Saree with Zari Border",
+        name: "Dhaka Kurtha Suruwal with Patuka",
         slug: demoSlug,
-        shortDescription: "Handwoven pure silk saree with a contrast zari border.",
+        shortDescription: "Handwoven Dhaka cotton, stitched in Kathmandu.",
         description:
-          "A classic Kanjivaram woven in pure mulberry silk, finished with a contrast temple border in real zari. Comes with an unstitched blouse piece.",
+          "A kurtha suruwal cut from handwoven Dhaka cloth, woven on a pit loom in Palpa and stitched in Kathmandu. Comes with a matching patuka and shawl.",
         status: "ACTIVE",
         isFeatured: true,
-        basePrice: 1249900,
-        compareAtPrice: 1599900,
-        fabric: "Kanjivaram Silk",
-        workType: "Zari",
-        occasion: "Bridal",
-        color: "Red",
-        pattern: "Temple Border",
-        careInstructions: "Dry clean only. Store wrapped in muslin.",
-        taxRatePct: 5,
+        basePrice: 749900,
+        compareAtPrice: 899900,
+        fabric: "Dhaka",
+        workType: "Dhaka weave",
+        occasion: "Dashain",
+        color: "Rato",
+        pattern: "Dhaka geometric",
+        careInstructions: "Hand wash cold, separately. Dry in shade.",
+        taxRatePct: 13,
         publishedAt: new Date(),
-        ...(kanjivaram ? { categories: { create: { categoryId: kanjivaram.id } } } : {}),
+        ...(dhakaKurtha ? { categories: { create: { categoryId: dhakaKurtha.id } } } : {}),
         variants: {
           create: {
-            sku: "SAR-KJV-RED-FS",
-            size: "Free Size",
-            color: "Red",
+            sku: "DHK-KUR-RED-M",
+            size: "M",
+            color: "Rato",
             stock: 6,
             lowStockAlert: 2,
-            weightGram: 850,
+            weightGram: 620,
           },
         },
       },

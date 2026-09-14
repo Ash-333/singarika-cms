@@ -1,41 +1,112 @@
 @import "tailwindcss";
 
+/*
+ * Singarika CMS — visual system.
+ *
+ * The palette comes out of the shop's own material: the indigo of a Dhaka
+ * weave carries every action, sindoor crimson marks the brand and anything
+ * destructive, and the paper ground is the undyed hemp the stock sits on.
+ *
+ * Values live directly in `@theme` (not `@theme inline`) so Tailwind can
+ * compose them with opacity modifiers such as `bg-ink/50`.
+ */
+@theme {
+  --color-canvas: #f7f5f0;
+  --color-surface: #ffffff;
+  --color-sunk: #faf8f4;
+  --color-ink: #221f1c;
+  --color-ink-soft: #4a443e;
+  --color-muted: #6d665e;
+  --color-faint: #938b81;
+  --color-hairline: #e4ded4;
+  --color-hairline-strong: #d3cabc;
+
+  --color-primary: #1e3a5f;
+  --color-primary-hover: #15293f;
+  --color-primary-soft: #eef2f8;
+  --color-primary-ring: #9db3cf;
+
+  --color-crimson: #a6192e;
+  --color-crimson-soft: #fbeef0;
+
+  --color-success: #2f6b4f;
+  --color-success-soft: #ecf5ef;
+  --color-warn: #8a5a08;
+  --color-warn-soft: #fdf3e2;
+  --color-danger: #b3261e;
+  --color-danger-soft: #fdeeec;
+
+  --color-rail: #17293d;
+  --color-rail-ink: #e8eef5;
+  --color-rail-muted: #8ea3ba;
+  --color-rail-hover: #22394f;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans Devanagari", sans-serif;
+  --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia,
+    "Noto Serif Devanagari", serif;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  color-scheme: light;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Every figure in this app is a quantity: keep the columns from dancing. */
+table,
+input[type="number"],
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* One consistent, always-visible keyboard focus. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/*
+ * The Dhaka border: a woven stripe down the edge of the navigation rail. It is
+ * the one ornamental thing in the interface, and it marks where the app begins.
+ */
+.dhaka-edge {
+  background-image: repeating-linear-gradient(
+    180deg,
+    var(--color-crimson) 0 10px,
+    #f0e6d2 10px 14px,
+    var(--color-rail) 14px 18px,
+    #c8901f 18px 22px,
+    #f0e6d2 22px 26px
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Blog content rendered from the editor, and the editor surface itself. */
-.prose-content h2 { font-size: 1.5rem; font-weight: 600; margin: 1.5rem 0 0.5rem; }
-.prose-content h3 { font-size: 1.25rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
-.prose-content p { margin: 0.75rem 0; line-height: 1.7; }
+.prose-content h2 { font-family: var(--font-display); font-size: 1.5rem; font-weight: 600; margin: 1.5rem 0 0.5rem; }
+.prose-content h3 { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; margin: 1.25rem 0 0.5rem; }
+.prose-content p { margin: 0.75rem 0; line-height: 1.7; max-width: 68ch; }
 .prose-content ul { list-style: disc; padding-left: 1.5rem; margin: 0.75rem 0; }
 .prose-content ol { list-style: decimal; padding-left: 1.5rem; margin: 0.75rem 0; }
-.prose-content a { color: #9d174d; text-decoration: underline; }
-.prose-content blockquote { border-left: 3px solid #e7e5e4; padding-left: 1rem; color: #57534e; margin: 1rem 0; }
+.prose-content a { color: var(--color-primary); text-decoration: underline; text-underline-offset: 2px; }
+.prose-content blockquote { border-left: 3px solid var(--color-crimson); padding-left: 1rem; color: var(--color-muted); margin: 1rem 0; }
 .prose-content img { border-radius: 0.5rem; margin: 1rem 0; }
 .ProseMirror { min-height: 22rem; outline: none; }
 .ProseMirror p.is-editor-empty:first-child::before {
   content: attr(data-placeholder);
-  float: left; color: #a8a29e; pointer-events: none; height: 0;
+  float: left; color: var(--color-faint); pointer-events: none; height: 0;
 }

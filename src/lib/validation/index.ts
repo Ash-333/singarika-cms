@@ -58,7 +58,7 @@ export const variantSchema = z.object({
   color: shortString,
   optionLabel: shortString,
   optionValue: shortString,
-  // Prices arrive in rupees from the UI and are converted to paise in the route.
+  // Prices arrive in rupees from the UI and are converted to paisa in the route.
   price: z.coerce.number().min(0).optional().nullable(),
   weightGram: z.coerce.number().int().min(0).optional().nullable(),
   stock: z.coerce.number().int().min(0).default(0),
@@ -89,7 +89,7 @@ export const productCreateSchema = z.object({
   countryOfOrigin: shortString,
   brand: shortString,
   hsnCode: shortString,
-  taxRatePct: z.coerce.number().int().min(0).max(100).default(5),
+  taxRatePct: z.coerce.number().int().min(0).max(100).default(13),
 
   metaTitle: shortString,
   metaDescription: optionalString,

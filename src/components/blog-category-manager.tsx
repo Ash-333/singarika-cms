@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card } from "@/components/ui";
+import { Button, Input, Notice, Section } from "@/components/ui";
 import DeleteButton from "@/components/delete-button";
 
 export default function BlogCategoryManager({
@@ -29,7 +29,7 @@ export default function BlogCategoryManager({
     setPending(false);
 
     if (!res.ok) {
-      setError(json?.error?.message ?? "Could not create the category");
+      setError(json?.error?.message ?? "That category could not be created.");
       return;
     }
     setName("");
@@ -37,42 +37,40 @@ export default function BlogCategoryManager({
   }
 
   return (
-    <Card>
-      <h2 className="mb-3 font-medium">Blog categories</h2>
-
-      <ul className="mb-4 divide-y divide-stone-100 text-sm">
-        {categories.length === 0 && <li className="py-2 text-stone-500">None yet.</li>}
+    <Section title="Blog categories" description="Group posts so readers can browse them.">
+      <ul className="mb-4 divide-y divide-hairline text-sm">
+        {categories.length === 0 && (
+          <li className="py-2 text-muted">None yet — add one below.</li>
+        )}
         {categories.map((c) => (
-          <li key={c.id} className="flex items-center justify-between py-2">
-            <span>
+          <li key={c.id} className="flex items-center justify-between gap-2 py-2">
+            <span className="min-w-0 truncate text-ink">
               {c.name}
-              <span className="ml-2 text-xs text-stone-400">{c.postCount}</span>
+              <span className="ml-2 text-xs text-muted">
+                {c.postCount} post{c.postCount === 1 ? "" : "s"}
+              </span>
             </span>
             <DeleteButton
               endpoint={`/api/admin/blog-categories/${c.id}`}
-              label={`Delete ${c.name}?`}
+              label={`Delete ${c.name}`}
             />
           </li>
         ))}
       </ul>
 
       <form onSubmit={create} className="flex gap-2">
-        <input
+        <Input
           required
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Styling Guides"
-          className="flex-1 rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-pink-700 focus:outline-none"
+          aria-label="New category name"
+          placeholder="Festival styling"
         />
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-lg bg-pink-800 px-3 py-2 text-sm font-medium text-white hover:bg-pink-900 disabled:opacity-60"
-        >
+        <Button type="submit" size="sm" disabled={pending}>
           Add
-        </button>
+        </Button>
       </form>
-      {error && <p className="mt-2 text-sm text-rose-700">{error}</p>}
-    </Card>
+      {error && <Notice className="mt-2">{error}</Notice>}
+    </Section>
   );
 }

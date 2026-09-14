@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { Button, Field, Input, Notice } from "@/components/ui";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function LoginForm() {
     });
 
     if (result?.error) {
-      setError("Incorrect email or password");
+      setError("That email and password don't match an account.");
       setPending(false);
       return;
     }
@@ -31,48 +32,23 @@ export default function LoginForm() {
   }
 
   return (
-    <form
-      onSubmit={onSubmit}
-      className="space-y-4 rounded-xl border border-stone-200 bg-white p-6 shadow-sm"
-    >
-      <div>
-        <label className="mb-1 block text-sm font-medium" htmlFor="email">
-          Email
-        </label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          required
-          autoComplete="email"
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-pink-700 focus:outline-none"
-        />
-      </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium" htmlFor="password">
-          Password
-        </label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          required
-          autoComplete="current-password"
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-pink-700 focus:outline-none"
-        />
-      </div>
+    <form onSubmit={onSubmit} className="mt-6 space-y-4">
+      <Field label="Email">
+        {(id) => (
+          <Input id={id} name="email" type="email" required autoComplete="email" autoFocus />
+        )}
+      </Field>
+      <Field label="Password">
+        {(id) => (
+          <Input id={id} name="password" type="password" required autoComplete="current-password" />
+        )}
+      </Field>
 
-      {error && (
-        <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
-      )}
+      {error && <Notice>{error}</Notice>}
 
-      <button
-        type="submit"
-        disabled={pending}
-        className="w-full rounded-lg bg-pink-800 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-pink-900 disabled:opacity-60"
-      >
+      <Button type="submit" disabled={pending} className="w-full">
         {pending ? "Signing in…" : "Sign in"}
-      </button>
+      </Button>
     </form>
   );
 }

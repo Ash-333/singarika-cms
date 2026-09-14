@@ -1,4 +1,4 @@
-// Singarika CMS — ethnic wear store
+// Singarika CMS — Nepali ethnic wear store
 // Datasource: PostgreSQL, Client: Prisma
 
 generator client {
@@ -61,7 +61,7 @@ model Category {
   slug        String  @unique
   description String?
 
-  // Self-referencing tree: Sarees > Silk Sarees > Kanjivaram
+  // Self-referencing tree: Kurtha Suruwal > Dhaka Kurtha Suruwal
   parentId String?
   parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: SetNull)
   children Category[] @relation("CategoryTree")
@@ -114,16 +114,16 @@ model Product {
 
   // Ethnic-wear specific attributes, used for storefront filters.
   fabric     String?
-  workType   String?   // zari, chikankari, mirror work, block print...
-  occasion   String?   // bridal, festive, casual, party
+  workType   String?   // dhaka weave, hand block print, embroidery...
+  occasion   String?   // dashain, tihar, teej, bihe, daily wear
   color      String?
   pattern    String?
   careInstructions String? @db.Text
-  countryOfOrigin  String? @default("India")
+  countryOfOrigin  String? @default("Nepal")
 
   brand      String?
-  hsnCode    String?
-  taxRatePct Int     @default(5) // GST % applied on sale
+  hsnCode    String?  // HS customs code
+  taxRatePct Int     @default(13) // VAT % applied on sale
 
   metaTitle       String?
   metaDescription String?

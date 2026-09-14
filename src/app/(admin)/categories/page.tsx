@@ -18,7 +18,7 @@ export default async function CategoriesPage() {
     <>
       <PageHeader
         title="Categories"
-        subtitle="Two-level catalogue tree — e.g. Sarees › Kanjivaram"
+        subtitle="The shop menu, two levels deep — Kurtha Suruwal › Dhaka Kurtha Suruwal."
       />
       <CategoryManager
         categories={categories.map((c) => ({

@@ -1,5 +1,5 @@
 import { cdnUrl } from "@/lib/cloudinary";
-import { paiseToRupees } from "@/lib/money";
+import { paisaToRupees } from "@/lib/money";
 
 /**
  * Shapes DB rows into the contract the storefront consumes. Keeping this in one
@@ -30,7 +30,7 @@ export function serializeVariant(v: any, basePrice: number) {
     size: v.size,
     color: v.color,
     option: v.optionLabel ? { label: v.optionLabel, value: v.optionValue } : null,
-    price: paiseToRupees(price),
+    price: paisaToRupees(price),
     weightGram: v.weightGram,
     inStock: available > 0 || v.allowBackorder,
     available,
@@ -52,12 +52,12 @@ export function serializeProduct(p: any, opts: { full?: boolean } = {}) {
     name: p.name,
     slug: p.slug,
     shortDescription: p.shortDescription,
-    price: paiseToRupees(p.basePrice),
-    compareAtPrice: p.compareAtPrice == null ? null : paiseToRupees(p.compareAtPrice),
+    price: paisaToRupees(p.basePrice),
+    compareAtPrice: p.compareAtPrice == null ? null : paisaToRupees(p.compareAtPrice),
     priceRange: prices.length
       ? { min: Math.min(...prices), max: Math.max(...prices) }
-      : { min: paiseToRupees(p.basePrice), max: paiseToRupees(p.basePrice) },
-    currency: "INR",
+      : { min: paisaToRupees(p.basePrice), max: paisaToRupees(p.basePrice) },
+    currency: "NPR",
     isFeatured: p.isFeatured,
     inStock: variants.some((v: { inStock: boolean }) => v.inStock),
     fabric: p.fabric,

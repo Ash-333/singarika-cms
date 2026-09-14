@@ -4,10 +4,11 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import { useState } from "react";
+import { Button, inputClass } from "@/components/ui";
 
 const btn = (active: boolean) =>
-  `rounded px-2 py-1 text-sm transition ${
-    active ? "bg-pink-100 text-pink-900" : "text-stone-600 hover:bg-stone-100"
+  `rounded-md px-2.5 py-1.5 text-sm transition ${
+    active ? "bg-primary text-white" : "text-ink-soft hover:bg-sunk"
   }`;
 
 export default function RichTextEditor({
@@ -35,36 +36,68 @@ export default function RichTextEditor({
   });
 
   if (!editor) {
-    return <div className="h-96 animate-pulse rounded-lg border border-stone-300 bg-stone-50" />;
+    return <div className="h-96 animate-pulse rounded-lg border border-hairline bg-sunk" />;
   }
 
   return (
-    <div className="rounded-lg border border-stone-300 bg-white">
-      <div className="flex flex-wrap items-center gap-1 border-b border-stone-200 px-2 py-1.5">
-        <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={btn(editor.isActive("bold"))}>
+    <div className="overflow-hidden rounded-lg border border-hairline-strong bg-surface">
+      <div className="flex flex-wrap items-center gap-1 border-b border-hairline bg-sunk px-2 py-2">
+        <button
+          type="button"
+          aria-label="Bold"
+          aria-pressed={editor.isActive("bold")}
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          className={btn(editor.isActive("bold"))}
+        >
           <strong>B</strong>
         </button>
-        <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={btn(editor.isActive("italic"))}>
+        <button
+          type="button"
+          aria-label="Italic"
+          aria-pressed={editor.isActive("italic")}
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          className={btn(editor.isActive("italic"))}
+        >
           <em>I</em>
         </button>
-        <span className="mx-1 h-4 w-px bg-stone-200" />
-        <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={btn(editor.isActive("heading", { level: 2 }))}>
-          H2
+        <span className="mx-1 h-5 w-px bg-hairline" />
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          className={btn(editor.isActive("heading", { level: 2 }))}
+        >
+          Heading
         </button>
-        <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} className={btn(editor.isActive("heading", { level: 3 }))}>
-          H3
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          className={btn(editor.isActive("heading", { level: 3 }))}
+        >
+          Subheading
         </button>
-        <span className="mx-1 h-4 w-px bg-stone-200" />
-        <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={btn(editor.isActive("bulletList"))}>
-          • List
+        <span className="mx-1 h-5 w-px bg-hairline" />
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          className={btn(editor.isActive("bulletList"))}
+        >
+          Bullets
         </button>
-        <button type="button" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={btn(editor.isActive("orderedList"))}>
-          1. List
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          className={btn(editor.isActive("orderedList"))}
+        >
+          Numbers
         </button>
-        <button type="button" onClick={() => editor.chain().focus().toggleBlockquote().run()} className={btn(editor.isActive("blockquote"))}>
+        <button
+          type="button"
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          className={btn(editor.isActive("blockquote"))}
+        >
           Quote
         </button>
-        <span className="mx-1 h-4 w-px bg-stone-200" />
+        <span className="mx-1 h-5 w-px bg-hairline" />
         <button
           type="button"
           onClick={() => {
@@ -75,29 +108,37 @@ export default function RichTextEditor({
         >
           Link
         </button>
-        <button type="button" onClick={() => editor.chain().focus().unsetLink().run()} className={btn(false)}>
-          Unlink
-        </button>
+        {editor.isActive("link") && (
+          <button
+            type="button"
+            onClick={() => editor.chain().focus().unsetLink().run()}
+            className={btn(false)}
+          >
+            Remove link
+          </button>
+        )}
       </div>
 
       {linkOpen && (
-        <div className="flex gap-2 border-b border-stone-200 bg-stone-50 px-3 py-2">
+        <div className="flex gap-2 border-b border-hairline bg-primary-soft px-3 py-2">
           <input
+            autoFocus
             value={linkUrl}
             onChange={(e) => setLinkUrl(e.target.value)}
             placeholder="https://…"
-            className="flex-1 rounded border border-stone-300 px-2 py-1 text-sm"
+            aria-label="Link address"
+            className={`${inputClass} py-2`}
           />
-          <button
+          <Button
             type="button"
+            size="sm"
             onClick={() => {
               if (linkUrl) editor.chain().focus().setLink({ href: linkUrl }).run();
               setLinkOpen(false);
             }}
-            className="rounded bg-pink-800 px-3 py-1 text-sm text-white"
           >
-            Apply
-          </button>
+            Add link
+          </Button>
         </div>
       )}
 

@@ -1,7 +1,7 @@
 # Singarika CMS
 
-Catalogue, inventory and blog manager for the Singarika ethnic wear store, with a
-read-only JSON API that the public storefront consumes.
+Catalogue, inventory and blog manager for Singarika, a Nepali ethnic wear store,
+with a read-only JSON API that the public storefront consumes.
 
 **Stack:** Next.js 16 (App Router) · PostgreSQL · Prisma 7 · Cloudinary · NextAuth v5 · Tailwind v4
 
@@ -39,7 +39,7 @@ Sign in at `/login` with `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` from `.env`.
 | `npm run dev` / `build` / `start` | Next.js (Turbopack by default in 16) |
 | `npm run db:migrate` | Create and apply a dev migration |
 | `npm run db:deploy` | Apply migrations in production |
-| `npm run db:seed` | Seed admin, categories, demo product |
+| `npm run db:seed` | Seed admin, Nepali category tree, demo product |
 | `npm run db:studio` | Prisma Studio |
 | `npm run lint` | ESLint |
 
@@ -51,7 +51,7 @@ Sign in at `/login` with `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` from `.env`.
 | --- | --- |
 | `/dashboard` | Counts, low-stock list, recent stock movements |
 | `/products`, `/products/[id]` | Catalogue with variants, images, attributes, SEO |
-| `/categories` | Two-level tree (Sarees › Kanjivaram Silk) |
+| `/categories` | Two-level tree (Kurtha Suruwal › Dhaka Kurtha Suruwal) |
 | `/inventory` | Stock adjustments and the full ledger |
 | `/blog`, `/blog/[id]` | Rich-text posts, blog categories, tags |
 | `/media` | Cloudinary library with alt text |
@@ -65,7 +65,7 @@ Roles: **ADMIN** (everything, including users) and **EDITOR** (everything else).
 
 Unauthenticated, CORS-enabled, cached at the edge
 (`s-maxage=60, stale-while-revalidate=300`; 300/900 for categories and facets).
-Prices are returned in **rupees**; only `ACTIVE` products and `PUBLISHED` posts
+Prices are returned in **Nepali rupees**; only `ACTIVE` products and `PUBLISHED` posts
 are ever exposed.
 
 ### Products
@@ -77,7 +77,7 @@ GET /api/v1/products
 | Query param | Notes |
 | --- | --- |
 | `category` | Slug. Passing a parent also returns its children's products. |
-| `fabric`, `occasion`, `color`, `tag` | Repeatable or comma-separated |
+| `fabric`, `occasion`, `color`, `tag` | Repeatable or comma-separated (e.g. `fabric=Dhaka`, `occasion=Dashain`) |
 | `minPrice`, `maxPrice` | In rupees |
 | `inStock=true`, `featured=true` | Flags |
 | `q` | Searches name, short description, fabric, work type |
@@ -89,7 +89,8 @@ GET /api/v1/products/:slug     # full detail + `related` products
 GET /api/v1/filters            # facet values with counts + price range
 ```
 
-Each product carries `priceRange`, `inStock`, the ethnic-wear attributes, and
+Each product carries `priceRange`, `inStock`, `currency: "NPR"`, the ethnic-wear
+attributes, and
 images pre-sized by Cloudinary (`thumb` 400×600, `card` 800×1200, `full` 1600w).
 
 ### Categories & blog
@@ -106,7 +107,7 @@ GET /api/v1/blog-categories     # categories that have published posts
 
 ```http
 POST /api/v1/inventory
-{ "skus": ["SAR-KJV-RED-FS"] }
+{ "skus": ["DHK-KUR-RED-M"] }
 ```
 
 Returns `{ sku, available, inStock }` per SKU, uncached. **Call this at checkout** —
@@ -137,8 +138,9 @@ GET  /api/admin/inventory/movements        # ledger, ?variantId= or ?productId=
 
 ## Design notes
 
-**Money is stored as integer paise.** `src/lib/money.ts` converts at the edges —
-forms and the public API speak rupees, the database never sees a float.
+**Money is stored as integer paisa.** `src/lib/money.ts` converts at the edges —
+forms and the public API speak Nepali rupees (NPR), the database never sees a
+float. Sales tax is Nepal VAT and defaults to 13%.
 
 **Stock only moves through the ledger.** `adjustStock` updates the variant and
 writes a `StockMovement` row in one transaction, refusing to go negative unless

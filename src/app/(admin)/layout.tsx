@@ -1,17 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/auth";
 import { prisma } from "@/lib/prisma";
-import NavLink from "@/components/nav-link";
-
-const nav = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/products", label: "Products" },
-  { href: "/categories", label: "Categories" },
-  { href: "/inventory", label: "Inventory" },
-  { href: "/blog", label: "Blog" },
-  { href: "/media", label: "Media" },
-];
+import Sidebar, { type NavGroup } from "@/components/sidebar";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -23,56 +13,55 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   `;
   const lowStockCount = Number(lowStock[0]?.count ?? 0);
 
-  const links = session.user.role === "ADMIN" ? [...nav, { href: "/users", label: "Users" }] : nav;
+  const groups: NavGroup[] = [
+    { heading: "Overview", items: [{ href: "/dashboard", label: "Dashboard" }] },
+    {
+      heading: "Shop",
+      items: [
+        { href: "/products", label: "Products" },
+        { href: "/categories", label: "Categories" },
+        { href: "/inventory", label: "Stock", badge: lowStockCount || undefined },
+      ],
+    },
+    {
+      heading: "Content",
+      items: [
+        { href: "/blog", label: "Blog" },
+        { href: "/media", label: "Photos" },
+      ],
+    },
+  ];
+
+  if (session.user.role === "ADMIN") {
+    groups.push({ heading: "Settings", items: [{ href: "/users", label: "Team" }] });
+  }
+
+  const signOutForm = (
+    <form
+      action={async () => {
+        "use server";
+        await signOut({ redirectTo: "/login" });
+      }}
+    >
+      <button
+        type="submit"
+        className="w-full rounded-lg border border-white/15 px-3 py-2 text-sm text-rail-ink transition hover:bg-rail-hover hover:text-white"
+      >
+        Sign out
+      </button>
+    </form>
+  );
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="hidden w-60 shrink-0 border-r border-stone-200 bg-white md:block">
-        <div className="px-5 py-6">
-          <Link href="/dashboard" className="text-xl font-semibold tracking-tight text-pink-900">
-            Singarika
-          </Link>
-          <p className="mt-0.5 text-xs text-stone-400">Store CMS</p>
-        </div>
-        <nav className="space-y-0.5 px-3">
-          {links.map((item) => (
-            <NavLink key={item.href} href={item.href} label={item.label}
-              badge={item.href === "/inventory" && lowStockCount > 0 ? lowStockCount : undefined} />
-          ))}
-        </nav>
-      </aside>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-stone-200 bg-white px-6 py-3">
-          <div className="flex gap-3 overflow-x-auto md:hidden">
-            {links.map((item) => (
-              <Link key={item.href} href={item.href} className="text-sm text-stone-600">
-                {item.label}
-              </Link>
-            ))}
-          </div>
-          <div className="ml-auto flex items-center gap-4">
-            <span className="text-sm text-stone-600">
-              {session.user.name}
-              <span className="ml-2 rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-500">
-                {session.user.role}
-              </span>
-            </span>
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/login" });
-              }}
-            >
-              <button type="submit" className="text-sm text-stone-500 hover:text-stone-800">
-                Sign out
-              </button>
-            </form>
-          </div>
-        </header>
-
-        <main className="flex-1 px-6 py-6">{children}</main>
-      </div>
+    <div className="min-h-screen lg:flex">
+      <Sidebar
+        groups={groups}
+        user={{ name: session.user.name ?? "Signed in", role: session.user.role }}
+        signOut={signOutForm}
+      />
+      <main className="min-w-0 flex-1">
+        <div className="mx-auto max-w-[75rem] px-4 py-7 sm:px-6 lg:px-8 lg:py-10">{children}</div>
+      </main>
     </div>
   );
 }

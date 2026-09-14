@@ -55,18 +55,19 @@ export default async function InventoryPage({
   return (
     <>
       <PageHeader
-        title="Inventory"
-        subtitle="Every change here is written to the stock ledger"
+        title="Stock"
+        subtitle="Count what is on the shelf. Every change is written to the ledger below."
       />
 
       <SearchBar
-        placeholder="Search by product or SKU…"
+        placeholder="Search by product name or SKU"
         filters={[
           {
             name: "lowStock",
+            label: "Filter by stock level",
             options: [
-              { value: "", label: "All stock" },
-              { value: "true", label: "Low stock only" },
+              { value: "", label: "Everything" },
+              { value: "true", label: "Needs restocking" },
             ],
           },
         ]}

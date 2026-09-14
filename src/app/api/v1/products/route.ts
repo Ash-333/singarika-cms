@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { rupeesToPaise } from "@/lib/money";
+import { rupeesToPaisa } from "@/lib/money";
 import { serializeProduct } from "@/lib/public-serialize";
 import { corsPreflight, publicJson } from "@/lib/public-response";
 
@@ -18,8 +18,8 @@ const SORTS: Record<string, Prisma.ProductOrderByWithRelationInput> = {
 
 /**
  * GET /api/v1/products
- * ?category=silk-sarees&fabric=Silk&occasion=Bridal&color=Red&tag=new
- * &minPrice=1000&maxPrice=9000&inStock=true&featured=true&q=kanjivaram
+ * ?category=kurtha-suruwal&fabric=Dhaka&occasion=Dashain&color=Rato&tag=new
+ * &minPrice=1000&maxPrice=9000&inStock=true&featured=true&q=dhaka
  * &sort=price-asc&page=1&perPage=24
  */
 export async function GET(req: NextRequest) {
@@ -64,8 +64,8 @@ export async function GET(req: NextRequest) {
     ...(minPrice || maxPrice
       ? {
           basePrice: {
-            ...(minPrice ? { gte: rupeesToPaise(minPrice) } : {}),
-            ...(maxPrice ? { lte: rupeesToPaise(maxPrice) } : {}),
+            ...(minPrice ? { gte: rupeesToPaisa(minPrice) } : {}),
+            ...(maxPrice ? { lte: rupeesToPaisa(maxPrice) } : {}),
           },
         }
       : {}),

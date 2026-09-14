@@ -6,7 +6,7 @@ import { corsPreflight, publicJson } from "@/lib/public-response";
 
 export const dynamic = "force-dynamic";
 
-/** GET /api/v1/posts?category=styling&tag=saree&q=drape&page=1&perPage=12 */
+/** GET /api/v1/posts?category=festival-styling&tag=dhaka&q=patuka&page=1&perPage=12 */
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams;
   const page = Math.max(1, Number(sp.get("page") ?? 1) || 1);

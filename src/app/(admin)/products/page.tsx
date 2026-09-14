@@ -1,12 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { prisma } from "@/lib/prisma";
-import { formatINR } from "@/lib/money";
-import { Badge, EmptyState, LinkButton, PageHeader } from "@/components/ui";
+import { formatNPR } from "@/lib/money";
+import { Badge, EmptyState, LinkButton, PageHeader, TableShell, Th } from "@/components/ui";
+import { PlusIcon } from "@/components/icons";
 import SearchBar from "@/components/search-bar";
 import DeleteButton from "@/components/delete-button";
 
 export const dynamic = "force-dynamic";
+
+const PER_PAGE = 20;
 
 export default async function ProductsPage({
   searchParams,
@@ -15,7 +18,6 @@ export default async function ProductsPage({
 }) {
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page ?? 1) || 1);
-  const perPage = 20;
 
   const where = {
     ...(sp.status ? { status: sp.status as "DRAFT" | "ACTIVE" | "ARCHIVED" } : {}),
@@ -38,27 +40,42 @@ export default async function ProductsPage({
         categories: { include: { category: true } },
       },
       orderBy: { updatedAt: "desc" },
-      skip: (page - 1) * perPage,
-      take: perPage,
+      skip: (page - 1) * PER_PAGE,
+      take: PER_PAGE,
     }),
     prisma.product.count({ where }),
   ]);
 
-  const totalPages = Math.max(1, Math.ceil(total / perPage));
+  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
+  const filtered = Boolean(sp.q || sp.status);
+  const pageUrl = (n: number) =>
+    `/products?page=${n}${sp.q ? `&q=${encodeURIComponent(sp.q)}` : ""}${
+      sp.status ? `&status=${sp.status}` : ""
+    }`;
 
   return (
     <>
       <PageHeader
         title="Products"
-        subtitle={`${total} product${total === 1 ? "" : "s"} in the catalogue`}
-        action={<LinkButton href="/products/new">Add product</LinkButton>}
+        subtitle={
+          total === 0
+            ? "Nothing in the catalogue yet."
+            : `${total} product${total === 1 ? "" : "s"}${filtered ? " match your filters" : " in the catalogue"}`
+        }
+        action={
+          <LinkButton href="/products/new">
+            <PlusIcon className="size-4" />
+            Add product
+          </LinkButton>
+        }
       />
 
       <SearchBar
-        placeholder="Search by name or SKU…"
+        placeholder="Search by product name or SKU"
         filters={[
           {
             name: "status",
+            label: "Filter by status",
             options: [
               { value: "", label: "All statuses" },
               { value: "ACTIVE", label: "Active" },
@@ -70,85 +87,119 @@ export default async function ProductsPage({
       />
 
       {products.length === 0 ? (
-        <EmptyState title="No products yet" hint="Add your first saree, lehenga or kurta set." />
+        filtered ? (
+          <EmptyState
+            title="No products match"
+            hint="Try a different spelling, or clear the status filter."
+            action={
+              <LinkButton href="/products" variant="secondary" size="sm">
+                Clear filters
+              </LinkButton>
+            }
+          />
+        ) : (
+          <EmptyState
+            title="Add your first product"
+            hint="A Dhaka kurtha suruwal, a sari, a pashmina shawl — whatever the shop is selling today."
+            action={<LinkButton href="/products/new">Add product</LinkButton>}
+          />
+        )
       ) : (
-        <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-stone-50 text-left text-xs uppercase tracking-wide text-stone-500">
-              <tr>
-                <th className="px-4 py-3 font-medium">Product</th>
-                <th className="px-4 py-3 font-medium">Category</th>
-                <th className="px-4 py-3 font-medium">Price</th>
-                <th className="px-4 py-3 font-medium">Stock</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-stone-100">
-              {products.map((p) => {
-                const stock = p.variants.reduce((sum, v) => sum + v.stock, 0);
-                const image = p.images[0]?.media;
-                return (
-                  <tr key={p.id} className="hover:bg-stone-50">
-                    <td className="px-4 py-3">
-                      <Link href={`/products/${p.id}`} className="flex items-center gap-3">
-                        {image ? (
-                          <Image
-                            src={image.secureUrl}
-                            alt={p.name}
-                            width={40}
-                            height={52}
-                            className="h-13 w-10 rounded object-cover"
-                          />
-                        ) : (
-                          <div className="h-13 w-10 rounded bg-stone-100" />
-                        )}
-                        <span>
-                          <span className="font-medium text-stone-900">{p.name}</span>
-                          <span className="block text-xs text-stone-400">
-                            {p.variants.length} variant{p.variants.length === 1 ? "" : "s"}
-                          </span>
+        <TableShell>
+          <thead>
+            <tr>
+              <Th>Product</Th>
+              <Th>Category</Th>
+              <Th align="right">Price</Th>
+              <Th align="right">Stock</Th>
+              <Th>Status</Th>
+              <Th className="w-px">
+                <span className="sr-only">Actions</span>
+              </Th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-hairline">
+            {products.map((p) => {
+              const stock = p.variants.reduce((sum, v) => sum + v.stock, 0);
+              const image = p.images[0]?.media;
+              return (
+                <tr key={p.id} className="transition hover:bg-sunk">
+                  <td className="px-4 py-3">
+                    <Link href={`/products/${p.id}`} className="flex items-center gap-3">
+                      {image ? (
+                        <Image
+                          src={image.secureUrl}
+                          alt=""
+                          width={40}
+                          height={52}
+                          className="h-13 w-10 shrink-0 rounded object-cover"
+                        />
+                      ) : (
+                        <span className="h-13 w-10 shrink-0 rounded bg-sunk" />
+                      )}
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium text-ink">{p.name}</span>
+                        <span className="mt-0.5 block text-xs text-muted">
+                          {p.variants.length} variant{p.variants.length === 1 ? "" : "s"}
+                          {p.isFeatured && " · featured"}
                         </span>
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3 text-stone-500">
-                      {p.categories.map((c) => c.category.name).join(", ") || "—"}
-                    </td>
-                    <td className="px-4 py-3 tabular-nums">{formatINR(p.basePrice)}</td>
-                    <td className="px-4 py-3 tabular-nums">
-                      <span className={stock === 0 ? "text-rose-600" : ""}>{stock}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge>{p.status}</Badge>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <DeleteButton
-                        endpoint={`/api/admin/products/${p.id}`}
-                        label={`Delete "${p.name}"?`}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                      </span>
+                    </Link>
+                  </td>
+                  <td className="px-4 py-3 text-muted">
+                    {p.categories.map((c) => c.category.name).join(", ") || "—"}
+                  </td>
+                  <td className="px-4 py-3 text-right font-medium tnum">
+                    {formatNPR(p.basePrice)}
+                  </td>
+                  <td className="px-4 py-3 text-right tnum">
+                    <span className={stock === 0 ? "font-medium text-danger" : "text-ink"}>
+                      {stock === 0 ? "Sold out" : stock}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <Badge>{p.status}</Badge>
+                  </td>
+                  <td className="px-2 py-3 text-right">
+                    <DeleteButton
+                      endpoint={`/api/admin/products/${p.id}`}
+                      label={`Delete ${p.name}`}
+                    />
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </TableShell>
       )}
 
       {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-center gap-2 text-sm">
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((n) => (
-            <Link
-              key={n}
-              href={`/products?page=${n}${sp.q ? `&q=${sp.q}` : ""}${sp.status ? `&status=${sp.status}` : ""}`}
-              className={`rounded px-3 py-1.5 ${
-                n === page ? "bg-pink-800 text-white" : "border border-stone-300 bg-white"
-              }`}
-            >
-              {n}
-            </Link>
-          ))}
-        </div>
+        <nav
+          aria-label="Pagination"
+          className="mt-5 flex items-center justify-between gap-3 text-sm"
+        >
+          <p className="text-muted">
+            Showing {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, total)} of {total}
+          </p>
+          <div className="flex gap-2">
+            {page > 1 && (
+              <Link
+                href={pageUrl(page - 1)}
+                className="rounded-lg border border-hairline-strong bg-surface px-3 py-2 font-medium hover:bg-sunk"
+              >
+                Previous
+              </Link>
+            )}
+            {page < totalPages && (
+              <Link
+                href={pageUrl(page + 1)}
+                className="rounded-lg border border-hairline-strong bg-surface px-3 py-2 font-medium hover:bg-sunk"
+              >
+                Next
+              </Link>
+            )}
+          </div>
+        </nav>
       )}
     </>
   );

@@ -2,7 +2,17 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Badge, Card } from "@/components/ui";
+import {
+  Badge,
+  Button,
+  Field,
+  Input,
+  Notice,
+  Section,
+  Select,
+  TableShell,
+  Th,
+} from "@/components/ui";
 
 type User = {
   id: string;
@@ -11,9 +21,6 @@ type User = {
   role: "ADMIN" | "EDITOR";
   isActive: boolean;
 };
-
-const field =
-  "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-pink-700 focus:outline-none";
 
 export default function UserManager({
   users,
@@ -25,12 +32,14 @@ export default function UserManager({
   const router = useRouter();
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "EDITOR" });
   const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
     setPending(true);
     setError(null);
+    setDone(null);
 
     const res = await fetch("/api/admin/users", {
       method: "POST",
@@ -41,9 +50,10 @@ export default function UserManager({
     setPending(false);
 
     if (!res.ok) {
-      setError(json?.error?.message ?? "Could not create the user");
+      setError(json?.error?.message ?? "That account could not be created.");
       return;
     }
+    setDone(`${form.name} can now sign in with the password you set.`);
     setForm({ name: "", email: "", password: "", role: "EDITOR" });
     router.refresh();
   }
@@ -58,106 +68,113 @@ export default function UserManager({
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-3">
-      <div className="overflow-hidden rounded-xl border border-stone-200 bg-white lg:col-span-2">
-        <table className="w-full text-sm">
-          <thead className="bg-stone-50 text-left text-xs uppercase tracking-wide text-stone-500">
+    <div className="grid items-start gap-5 lg:grid-cols-3">
+      <div className="lg:col-span-2">
+        <TableShell>
+          <thead>
             <tr>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium">Email</th>
-              <th className="px-4 py-3 font-medium">Role</th>
-              <th className="px-4 py-3 font-medium">Status</th>
+              <Th>Name</Th>
+              <Th>Email</Th>
+              <Th>Can do</Th>
+              <Th align="right">Access</Th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-stone-100">
+          <tbody className="divide-y divide-hairline">
             {users.map((u) => (
-              <tr key={u.id}>
-                <td className="px-4 py-3 font-medium">
+              <tr key={u.id} className={u.isActive ? "" : "bg-sunk"}>
+                <td className="px-4 py-3 font-medium text-ink">
                   {u.name}
-                  {u.id === currentUserId && (
-                    <span className="ml-2 text-xs text-stone-400">you</span>
-                  )}
+                  {u.id === currentUserId && <span className="ml-2 text-xs text-muted">you</span>}
                 </td>
-                <td className="px-4 py-3 text-stone-500">{u.email}</td>
+                <td className="px-4 py-3 text-muted">{u.email}</td>
                 <td className="px-4 py-3">
-                  <select
+                  <Select
+                    aria-label={`Role for ${u.name}`}
                     value={u.role}
                     disabled={u.id === currentUserId}
                     onChange={(e) => patch(u.id, { role: e.target.value })}
-                    className="rounded border border-stone-300 px-2 py-1 text-sm disabled:bg-stone-100"
+                    className="w-auto py-1.5 text-sm"
                   >
-                    <option value="ADMIN">Admin</option>
-                    <option value="EDITOR">Editor</option>
-                  </select>
+                    <option value="ADMIN">Everything, including the team</option>
+                    <option value="EDITOR">Products, stock and the blog</option>
+                  </Select>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 text-right">
                   {u.id === currentUserId ? (
                     <Badge tone="ACTIVE">Active</Badge>
                   ) : (
-                    <button
+                    <Button
                       type="button"
+                      variant="quiet"
+                      size="sm"
                       onClick={() => patch(u.id, { isActive: !u.isActive })}
-                      className="text-sm text-pink-800 hover:underline"
                     >
-                      {u.isActive ? "Deactivate" : "Reactivate"}
-                    </button>
+                      {u.isActive ? "Remove access" : "Restore access"}
+                    </Button>
                   )}
                 </td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </TableShell>
       </div>
 
-      <Card>
-        <h2 className="mb-3 font-medium">Invite a user</h2>
-        <form onSubmit={create} className="space-y-3">
-          <input
-            required
-            placeholder="Name"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
-            className={field}
-          />
-          <input
-            required
-            type="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            className={field}
-          />
-          <input
-            required
-            type="password"
-            minLength={8}
-            placeholder="Temporary password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            className={field}
-          />
-          <select
-            value={form.role}
-            onChange={(e) => setForm({ ...form, role: e.target.value })}
-            className={field}
-          >
-            <option value="EDITOR">Editor</option>
-            <option value="ADMIN">Admin</option>
-          </select>
+      <Section title="Add someone" description="They sign in with the password you set here.">
+        <form onSubmit={create} className="space-y-4">
+          <Field label="Name" required>
+            {(id) => (
+              <Input
+                id={id}
+                required
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+            )}
+          </Field>
+          <Field label="Email" required>
+            {(id) => (
+              <Input
+                id={id}
+                required
+                type="email"
+                value={form.email}
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
+            )}
+          </Field>
+          <Field label="First password" required hint="At least 8 characters. Ask them to change it.">
+            {(id) => (
+              <Input
+                id={id}
+                required
+                type="password"
+                minLength={8}
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+              />
+            )}
+          </Field>
+          <Field label="They can">
+            {(id) => (
+              <Select
+                id={id}
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value })}
+              >
+                <option value="EDITOR">Manage products, stock and the blog</option>
+                <option value="ADMIN">Do everything, including the team</option>
+              </Select>
+            )}
+          </Field>
 
-          {error && (
-            <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
-          )}
+          {error && <Notice>{error}</Notice>}
+          {done && <Notice tone="success">{done}</Notice>}
 
-          <button
-            type="submit"
-            disabled={pending}
-            className="w-full rounded-lg bg-pink-800 px-4 py-2 text-sm font-medium text-white hover:bg-pink-900 disabled:opacity-60"
-          >
-            {pending ? "Creating…" : "Create user"}
-          </button>
+          <Button type="submit" size="sm" disabled={pending} className="w-full">
+            {pending ? "Creating…" : "Create account"}
+          </Button>
         </form>
-      </Card>
+      </Section>
     </div>
   );
 }

@@ -3,7 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import MediaPicker, { type MediaItem } from "@/components/media-picker";
-import { Card } from "@/components/ui";
+import {
+  Button,
+  Checkbox,
+  Field,
+  Input,
+  MoneyInput,
+  Notice,
+  Section,
+  Select,
+  Textarea,
+} from "@/components/ui";
+import { PlusIcon } from "@/components/icons";
 
 export type VariantDraft = {
   id?: string;
@@ -62,13 +73,43 @@ export const emptyVariant = (): VariantDraft => ({
   isActive: true,
 });
 
-const FABRICS = ["Silk", "Cotton", "Georgette", "Chiffon", "Banarasi Silk", "Kanjivaram Silk", "Linen", "Organza", "Velvet", "Rayon"];
-const OCCASIONS = ["Bridal", "Festive", "Wedding", "Party", "Casual", "Office", "Daily Wear"];
-const WORK_TYPES = ["Zari", "Zardozi", "Chikankari", "Mirror Work", "Block Print", "Embroidery", "Sequin", "Bandhani", "Handloom", "Plain"];
-
-const field =
-  "w-full rounded-lg border border-stone-300 px-3 py-2 text-sm focus:border-pink-700 focus:outline-none";
-const labelCls = "mb-1 block text-sm font-medium text-stone-700";
+/** Nepali textile vocabulary — these become the storefront's filters. */
+const FABRICS = [
+  "Dhaka",
+  "Pashmina",
+  "Mul Cotton",
+  "Cotton",
+  "Silk",
+  "Allo (nettle)",
+  "Hemp",
+  "Yak Wool",
+  "Georgette",
+  "Chiffon",
+  "Velvet",
+  "Linen",
+];
+const OCCASIONS = [
+  "Dashain",
+  "Tihar",
+  "Teej",
+  "Bihe (wedding)",
+  "Bratabandha",
+  "Pasni",
+  "Festive",
+  "Office",
+  "Daily wear",
+];
+const WORK_TYPES = [
+  "Dhaka weave",
+  "Handloom",
+  "Hand-block print",
+  "Embroidery",
+  "Mirror work",
+  "Beadwork",
+  "Tie-dye",
+  "Applique",
+  "Plain",
+];
 
 export default function ProductForm({
   initial,
@@ -93,6 +134,11 @@ export default function ProductForm({
 
   const num = (v: string) => (v.trim() === "" ? null : Number(v));
 
+  // Margin is the number the shop actually watches; show it as soon as it exists.
+  const price = Number(draft.basePrice || 0);
+  const cost = Number(draft.costPrice || 0);
+  const margin = price > 0 && cost > 0 ? Math.round(((price - cost) / price) * 100) : null;
+
   async function save(status?: ProductDraft["status"]) {
     setPending(true);
     setError(null);
@@ -115,7 +161,7 @@ export default function ProductForm({
       careInstructions: draft.careInstructions || null,
       brand: draft.brand || null,
       hsnCode: draft.hsnCode || null,
-      taxRatePct: Number(draft.taxRatePct || 5),
+      taxRatePct: Number(draft.taxRatePct || 13),
       metaTitle: draft.metaTitle || null,
       metaDescription: draft.metaDescription || null,
       categoryIds: draft.categoryIds,
@@ -150,7 +196,7 @@ export default function ProductForm({
     setPending(false);
 
     if (!res.ok) {
-      setError(json?.error?.message ?? "Could not save the product");
+      setError(json?.error?.message ?? "The product could not be saved.");
       return;
     }
     router.push(`/products/${json.data.id}`);
@@ -163,432 +209,472 @@ export default function ProductForm({
         e.preventDefault();
         save();
       }}
-      className="grid gap-5 lg:grid-cols-3"
     >
-      <div className="space-y-5 lg:col-span-2">
-        <Card>
-          <h2 className="mb-4 font-medium">Basics</h2>
-          <div className="space-y-4">
-            <div>
-              <label className={labelCls}>Product name</label>
-              <input
-                required
-                value={draft.name}
-                onChange={(e) => set("name", e.target.value)}
-                placeholder="Kanjivaram Silk Saree with Zari Border"
-                className={field}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>URL slug</label>
-              <input
-                value={draft.slug}
-                onChange={(e) => set("slug", e.target.value)}
-                placeholder="left blank, generated from the name"
-                className={field}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>Short description</label>
-              <input
-                value={draft.shortDescription}
-                onChange={(e) => set("shortDescription", e.target.value)}
-                className={field}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>Full description</label>
-              <textarea
-                rows={6}
-                value={draft.description}
-                onChange={(e) => set("description", e.target.value)}
-                className={field}
-              />
-            </div>
-          </div>
-        </Card>
+      {/* One action bar, always in reach — no hunting for Save down the page. */}
+      <div className="sticky top-0 z-20 -mx-4 mb-5 flex flex-wrap items-center gap-3 border-b border-hairline bg-canvas/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+        <label htmlFor="product-status" className="text-sm text-muted">
+          Status
+        </label>
+        <Select
+          id="product-status"
+          value={draft.status}
+          onChange={(e) => set("status", e.target.value as ProductDraft["status"])}
+          className="w-auto py-2"
+        >
+          <option value="DRAFT">Draft</option>
+          <option value="ACTIVE">Active</option>
+          <option value="ARCHIVED">Archived</option>
+        </Select>
 
-        <Card>
-          <h2 className="mb-4 font-medium">Images</h2>
-          <MediaPicker
-            selected={draft.images}
-            onChange={(images) => set("images", images)}
-            folder="products"
-          />
-          <p className="mt-2 text-xs text-stone-400">
-            The first image is used as the product thumbnail on the storefront.
-          </p>
-        </Card>
-
-        <Card>
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="font-medium">Variants &amp; stock</h2>
-            <button
+        <div className="ml-auto flex gap-2">
+          {draft.status !== "ACTIVE" && (
+            <Button
               type="button"
-              onClick={() => set("variants", [...draft.variants, emptyVariant()])}
-              className="text-sm font-medium text-pink-800 hover:underline"
+              variant="secondary"
+              size="sm"
+              disabled={pending}
+              onClick={() => save("ACTIVE")}
             >
-              + Add variant
-            </button>
-          </div>
-
-          {draft.id && (
-            <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              Stock for existing variants is changed on the Inventory page so every
-              movement is recorded in the ledger.
-            </p>
+              Publish now
+            </Button>
           )}
+          <Button type="submit" size="sm" disabled={pending}>
+            {pending ? "Saving…" : draft.id ? "Save changes" : "Create product"}
+          </Button>
+        </div>
 
-          <div className="space-y-3">
-            {draft.variants.map((v, i) => (
-              <div key={v.id ?? i} className="rounded-lg border border-stone-200 p-3">
-                <div className="grid gap-3 sm:grid-cols-4">
-                  <div>
-                    <label className="mb-1 block text-xs text-stone-500">SKU</label>
-                    <input
-                      required
-                      value={v.sku}
-                      onChange={(e) => setVariant(i, { sku: e.target.value })}
-                      placeholder="SAR-KJV-RED-FS"
-                      className={field}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs text-stone-500">Size</label>
-                    <input
-                      value={v.size}
-                      onChange={(e) => setVariant(i, { size: e.target.value })}
-                      placeholder="Free Size / M"
-                      className={field}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs text-stone-500">Colour</label>
-                    <input
-                      value={v.color}
-                      onChange={(e) => setVariant(i, { color: e.target.value })}
-                      className={field}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs text-stone-500">Price (₹)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={v.price}
-                      onChange={(e) => setVariant(i, { price: e.target.value })}
-                      placeholder="base price"
-                      className={field}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs text-stone-500">
-                      Stock {v.id && <span className="text-stone-400">(read-only)</span>}
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={v.stock}
-                      disabled={Boolean(v.id)}
-                      onChange={(e) => setVariant(i, { stock: e.target.value })}
-                      className={`${field} disabled:bg-stone-100 disabled:text-stone-500`}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs text-stone-500">Low stock alert</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={v.lowStockAlert}
-                      onChange={(e) => setVariant(i, { lowStockAlert: e.target.value })}
-                      className={field}
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs text-stone-500">Weight (g)</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={v.weightGram}
-                      onChange={(e) => setVariant(i, { weightGram: e.target.value })}
-                      className={field}
-                    />
-                  </div>
-                  <div className="flex items-end gap-4 text-xs text-stone-600">
-                    <label className="flex items-center gap-1.5">
-                      <input
-                        type="checkbox"
-                        checked={v.isActive}
-                        onChange={(e) => setVariant(i, { isActive: e.target.checked })}
-                      />
-                      Active
-                    </label>
+        {error && (
+          <Notice className="w-full" tone="error">
+            {error}
+          </Notice>
+        )}
+      </div>
+
+      <div className="grid items-start gap-5 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
+          <Section title="Basics" description="What the customer reads first.">
+            <div className="space-y-4">
+              <Field label="Product name" required>
+                {(id) => (
+                  <Input
+                    id={id}
+                    required
+                    value={draft.name}
+                    onChange={(e) => set("name", e.target.value)}
+                    placeholder="Dhaka kurtha suruwal with patuka"
+                  />
+                )}
+              </Field>
+              <Field
+                label="Web address"
+                hint={
+                  draft.slug
+                    ? `singarika.com/products/${draft.slug}`
+                    : "Left blank, this is built from the product name."
+                }
+              >
+                {(id) => (
+                  <Input
+                    id={id}
+                    value={draft.slug}
+                    onChange={(e) => set("slug", e.target.value)}
+                    placeholder="dhaka-kurtha-suruwal"
+                  />
+                )}
+              </Field>
+              <Field label="Short description" hint="One line, shown under the name on listings.">
+                {(id) => (
+                  <Input
+                    id={id}
+                    value={draft.shortDescription}
+                    onChange={(e) => set("shortDescription", e.target.value)}
+                    placeholder="Handwoven Dhaka cotton, stitched in Kathmandu."
+                  />
+                )}
+              </Field>
+              <Field label="Full description">
+                {(id) => (
+                  <Textarea
+                    id={id}
+                    rows={6}
+                    value={draft.description}
+                    onChange={(e) => set("description", e.target.value)}
+                    placeholder="Fabric, weave, fit, what it comes with…"
+                  />
+                )}
+              </Field>
+            </div>
+          </Section>
+
+          <Section title="Photos" description="The first photo is the one shoppers see on listings.">
+            <MediaPicker
+              selected={draft.images}
+              onChange={(images) => set("images", images)}
+              folder="products"
+            />
+          </Section>
+
+          <Section
+            title="Sizes & stock"
+            description="One row per size or colour you sell separately."
+            action={
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => set("variants", [...draft.variants, emptyVariant()])}
+              >
+                <PlusIcon className="size-4" />
+                Add a size
+              </Button>
+            }
+          >
+            {draft.id && (
+              <Notice tone="info" className="mb-4">
+                Stock counts are changed on the Stock page, so every movement is recorded in the
+                ledger.
+              </Notice>
+            )}
+
+            <div className="space-y-3">
+              {draft.variants.map((v, i) => (
+                <div key={v.id ?? i} className="rounded-lg border border-hairline bg-sunk p-4">
+                  <div className="mb-3 flex items-center justify-between">
+                    <p className="text-sm font-medium text-ink">
+                      {[v.size, v.color].filter(Boolean).join(" · ") || `Size ${i + 1}`}
+                    </p>
                     {draft.variants.length > 1 && (
                       <button
                         type="button"
-                        onClick={() =>
-                          set("variants", draft.variants.filter((_, idx) => idx !== i))
-                        }
-                        className="text-rose-600 hover:underline"
+                        onClick={() => set("variants", draft.variants.filter((_, idx) => idx !== i))}
+                        className="text-sm text-danger hover:underline"
                       >
                         Remove
                       </button>
                     )}
                   </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <Field label="SKU" hint="Your own stock code.">
+                      {(id) => (
+                        <Input
+                          id={id}
+                          required
+                          value={v.sku}
+                          onChange={(e) => setVariant(i, { sku: e.target.value })}
+                          placeholder="DHK-KUR-RED-M"
+                        />
+                      )}
+                    </Field>
+                    <Field label="Size">
+                      {(id) => (
+                        <Input
+                          id={id}
+                          value={v.size}
+                          onChange={(e) => setVariant(i, { size: e.target.value })}
+                          placeholder="Free size / M"
+                        />
+                      )}
+                    </Field>
+                    <Field label="Colour">
+                      {(id) => (
+                        <Input
+                          id={id}
+                          value={v.color}
+                          onChange={(e) => setVariant(i, { color: e.target.value })}
+                          placeholder="Rato"
+                        />
+                      )}
+                    </Field>
+                    <Field label="Price" hint="Leave empty to use the product price.">
+                      {(id) => (
+                        <MoneyInput
+                          id={id}
+                          value={v.price}
+                          onChange={(e) => setVariant(i, { price: e.target.value })}
+                          placeholder="Same as product"
+                        />
+                      )}
+                    </Field>
+                    <Field label={v.id ? "In stock (set on Stock page)" : "Opening stock"}>
+                      {(id) => (
+                        <Input
+                          id={id}
+                          type="number"
+                          min="0"
+                          value={v.stock}
+                          disabled={Boolean(v.id)}
+                          onChange={(e) => setVariant(i, { stock: e.target.value })}
+                        />
+                      )}
+                    </Field>
+                    <Field label="Warn me below">
+                      {(id) => (
+                        <Input
+                          id={id}
+                          type="number"
+                          min="0"
+                          value={v.lowStockAlert}
+                          onChange={(e) => setVariant(i, { lowStockAlert: e.target.value })}
+                        />
+                      )}
+                    </Field>
+                    <Field label="Weight (g)" hint="Used for delivery charges.">
+                      {(id) => (
+                        <Input
+                          id={id}
+                          type="number"
+                          min="0"
+                          value={v.weightGram}
+                          onChange={(e) => setVariant(i, { weightGram: e.target.value })}
+                        />
+                      )}
+                    </Field>
+                    <div className="flex items-end pb-1">
+                      <Checkbox
+                        label="Sell this size"
+                        checked={v.isActive}
+                        onChange={(e) => setVariant(i, { isActive: e.target.checked })}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        <Card>
-          <h2 className="mb-4 font-medium">Search engine listing</h2>
-          <div className="space-y-4">
-            <div>
-              <label className={labelCls}>Meta title</label>
-              <input
-                value={draft.metaTitle}
-                onChange={(e) => set("metaTitle", e.target.value)}
-                className={field}
-              />
+              ))}
             </div>
-            <div>
-              <label className={labelCls}>Meta description</label>
-              <textarea
-                rows={3}
-                value={draft.metaDescription}
-                onChange={(e) => set("metaDescription", e.target.value)}
-                className={field}
-              />
-            </div>
-          </div>
-        </Card>
-      </div>
+          </Section>
 
-      <div className="space-y-5">
-        <Card>
-          <h2 className="mb-4 font-medium">Publish</h2>
-          <label className={labelCls}>Status</label>
-          <select
-            value={draft.status}
-            onChange={(e) => set("status", e.target.value as ProductDraft["status"])}
-            className={field}
+          <Section
+            title="Google listing"
+            description="How this product appears in search results. Left empty, the name and short description are used."
           >
-            <option value="DRAFT">Draft</option>
-            <option value="ACTIVE">Active</option>
-            <option value="ARCHIVED">Archived</option>
-          </select>
+            <div className="space-y-4">
+              <Field label="Page title">
+                {(id) => (
+                  <Input
+                    id={id}
+                    value={draft.metaTitle}
+                    onChange={(e) => set("metaTitle", e.target.value)}
+                    maxLength={70}
+                  />
+                )}
+              </Field>
+              <Field label="Page description" hint="Around 155 characters reads best.">
+                {(id) => (
+                  <Textarea
+                    id={id}
+                    rows={3}
+                    value={draft.metaDescription}
+                    onChange={(e) => set("metaDescription", e.target.value)}
+                  />
+                )}
+              </Field>
+            </div>
+          </Section>
+        </div>
 
-          <label className="mt-3 flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              checked={draft.isFeatured}
-              onChange={(e) => set("isFeatured", e.target.checked)}
-            />
-            Feature on the homepage
-          </label>
+        <div className="space-y-5">
+          <Section
+            title="Pricing"
+            description={margin === null ? "Prices are in Nepali rupees." : `Margin ${margin}%`}
+          >
+            <div className="space-y-4">
+              <Field label="Selling price" required>
+                {(id) => (
+                  <MoneyInput
+                    id={id}
+                    required
+                    value={draft.basePrice}
+                    onChange={(e) => set("basePrice", e.target.value)}
+                  />
+                )}
+              </Field>
+              <Field label="Was price" hint="Shown struck through next to the selling price.">
+                {(id) => (
+                  <MoneyInput
+                    id={id}
+                    value={draft.compareAtPrice}
+                    onChange={(e) => set("compareAtPrice", e.target.value)}
+                  />
+                )}
+              </Field>
+              <Field label="What it cost you" hint="Never shown to customers.">
+                {(id) => (
+                  <MoneyInput
+                    id={id}
+                    value={draft.costPrice}
+                    onChange={(e) => set("costPrice", e.target.value)}
+                  />
+                )}
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="VAT %">
+                  {(id) => (
+                    <Input
+                      id={id}
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={draft.taxRatePct}
+                      onChange={(e) => set("taxRatePct", e.target.value)}
+                    />
+                  )}
+                </Field>
+                <Field label="HS code" hint="For customs.">
+                  {(id) => (
+                    <Input
+                      id={id}
+                      value={draft.hsnCode}
+                      onChange={(e) => set("hsnCode", e.target.value)}
+                    />
+                  )}
+                </Field>
+              </div>
+            </div>
+          </Section>
 
-          {error && (
-            <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{error}</p>
-          )}
-
-          <div className="mt-4 flex gap-2">
-            <button
-              type="submit"
-              disabled={pending}
-              className="flex-1 rounded-lg bg-pink-800 px-4 py-2 text-sm font-medium text-white hover:bg-pink-900 disabled:opacity-60"
-            >
-              {pending ? "Saving…" : "Save"}
-            </button>
-            {draft.status !== "ACTIVE" && (
-              <button
-                type="button"
-                onClick={() => save("ACTIVE")}
-                disabled={pending}
-                className="rounded-lg border border-stone-300 px-4 py-2 text-sm font-medium hover:bg-stone-50 disabled:opacity-60"
-              >
-                Publish
-              </button>
+          <Section title="Categories" description="Where this sits in the shop menu.">
+            {categories.length === 0 ? (
+              <p className="text-sm text-muted">
+                No categories yet — create them on the Categories page.
+              </p>
+            ) : (
+              <div className="max-h-64 space-y-2.5 overflow-y-auto pr-1">
+                {categories.map((c) => (
+                  <Checkbox
+                    key={c.id}
+                    label={c.parentName ? `${c.parentName} › ${c.name}` : c.name}
+                    checked={draft.categoryIds.includes(c.id)}
+                    onChange={(e) =>
+                      set(
+                        "categoryIds",
+                        e.target.checked
+                          ? [...draft.categoryIds, c.id]
+                          : draft.categoryIds.filter((id) => id !== c.id),
+                      )
+                    }
+                  />
+                ))}
+              </div>
             )}
-          </div>
-        </Card>
+            <div className="mt-4 border-t border-hairline pt-4">
+              <Checkbox
+                label="Feature on the homepage"
+                checked={draft.isFeatured}
+                onChange={(e) => set("isFeatured", e.target.checked)}
+              />
+            </div>
+          </Section>
 
-        <Card>
-          <h2 className="mb-4 font-medium">Pricing</h2>
-          <div className="space-y-3">
-            <div>
-              <label className={labelCls}>Selling price (₹)</label>
-              <input
-                required
-                type="number"
-                min="0"
-                value={draft.basePrice}
-                onChange={(e) => set("basePrice", e.target.value)}
-                className={field}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>Compare-at price (₹)</label>
-              <input
-                type="number"
-                min="0"
-                value={draft.compareAtPrice}
-                onChange={(e) => set("compareAtPrice", e.target.value)}
-                className={field}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>Cost price (₹)</label>
-              <input
-                type="number"
-                min="0"
-                value={draft.costPrice}
-                onChange={(e) => set("costPrice", e.target.value)}
-                className={field}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>GST %</label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={draft.taxRatePct}
-                  onChange={(e) => set("taxRatePct", e.target.value)}
-                  className={field}
-                />
+          <Section title="Details" description="These become filters on the storefront.">
+            <div className="space-y-4">
+              <Field label="Fabric">
+                {(id) => (
+                  <>
+                    <Input
+                      id={id}
+                      list="fabrics"
+                      value={draft.fabric}
+                      onChange={(e) => set("fabric", e.target.value)}
+                      placeholder="Dhaka"
+                    />
+                    <datalist id="fabrics">
+                      {FABRICS.map((f) => (
+                        <option key={f} value={f} />
+                      ))}
+                    </datalist>
+                  </>
+                )}
+              </Field>
+              <Field label="Weave or work">
+                {(id) => (
+                  <>
+                    <Input
+                      id={id}
+                      list="workTypes"
+                      value={draft.workType}
+                      onChange={(e) => set("workType", e.target.value)}
+                      placeholder="Dhaka weave"
+                    />
+                    <datalist id="workTypes">
+                      {WORK_TYPES.map((w) => (
+                        <option key={w} value={w} />
+                      ))}
+                    </datalist>
+                  </>
+                )}
+              </Field>
+              <Field label="Worn for">
+                {(id) => (
+                  <>
+                    <Input
+                      id={id}
+                      list="occasions"
+                      value={draft.occasion}
+                      onChange={(e) => set("occasion", e.target.value)}
+                      placeholder="Dashain"
+                    />
+                    <datalist id="occasions">
+                      {OCCASIONS.map((o) => (
+                        <option key={o} value={o} />
+                      ))}
+                    </datalist>
+                  </>
+                )}
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Colour">
+                  {(id) => (
+                    <Input
+                      id={id}
+                      value={draft.color}
+                      onChange={(e) => set("color", e.target.value)}
+                    />
+                  )}
+                </Field>
+                <Field label="Pattern">
+                  {(id) => (
+                    <Input
+                      id={id}
+                      value={draft.pattern}
+                      onChange={(e) => set("pattern", e.target.value)}
+                    />
+                  )}
+                </Field>
               </div>
-              <div>
-                <label className={labelCls}>HSN code</label>
-                <input
-                  value={draft.hsnCode}
-                  onChange={(e) => set("hsnCode", e.target.value)}
-                  className={field}
-                />
-              </div>
+              <Field label="Brand or weaver">
+                {(id) => (
+                  <Input
+                    id={id}
+                    value={draft.brand}
+                    onChange={(e) => set("brand", e.target.value)}
+                    placeholder="Singarika"
+                  />
+                )}
+              </Field>
+              <Field label="Tags" hint="Separate with commas.">
+                {(id) => (
+                  <Input
+                    id={id}
+                    value={draft.tags}
+                    onChange={(e) => set("tags", e.target.value)}
+                    placeholder="new-arrival, handloom"
+                  />
+                )}
+              </Field>
+              <Field label="Care instructions">
+                {(id) => (
+                  <Textarea
+                    id={id}
+                    rows={3}
+                    value={draft.careInstructions}
+                    onChange={(e) => set("careInstructions", e.target.value)}
+                    placeholder="Hand wash cold. Dry in shade."
+                  />
+                )}
+              </Field>
             </div>
-          </div>
-        </Card>
-
-        <Card>
-          <h2 className="mb-4 font-medium">Categories</h2>
-          <div className="max-h-56 space-y-1.5 overflow-y-auto text-sm">
-            {categories.length === 0 && (
-              <p className="text-stone-500">No categories yet — create some first.</p>
-            )}
-            {categories.map((c) => (
-              <label key={c.id} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={draft.categoryIds.includes(c.id)}
-                  onChange={(e) =>
-                    set(
-                      "categoryIds",
-                      e.target.checked
-                        ? [...draft.categoryIds, c.id]
-                        : draft.categoryIds.filter((id) => id !== c.id),
-                    )
-                  }
-                />
-                {c.parentName && <span className="text-stone-400">{c.parentName} ›</span>}
-                {c.name}
-              </label>
-            ))}
-          </div>
-        </Card>
-
-        <Card>
-          <h2 className="mb-4 font-medium">Attributes</h2>
-          <div className="space-y-3">
-            <div>
-              <label className={labelCls}>Fabric</label>
-              <input
-                list="fabrics"
-                value={draft.fabric}
-                onChange={(e) => set("fabric", e.target.value)}
-                className={field}
-              />
-              <datalist id="fabrics">
-                {FABRICS.map((f) => (
-                  <option key={f} value={f} />
-                ))}
-              </datalist>
-            </div>
-            <div>
-              <label className={labelCls}>Work type</label>
-              <input
-                list="workTypes"
-                value={draft.workType}
-                onChange={(e) => set("workType", e.target.value)}
-                className={field}
-              />
-              <datalist id="workTypes">
-                {WORK_TYPES.map((w) => (
-                  <option key={w} value={w} />
-                ))}
-              </datalist>
-            </div>
-            <div>
-              <label className={labelCls}>Occasion</label>
-              <input
-                list="occasions"
-                value={draft.occasion}
-                onChange={(e) => set("occasion", e.target.value)}
-                className={field}
-              />
-              <datalist id="occasions">
-                {OCCASIONS.map((o) => (
-                  <option key={o} value={o} />
-                ))}
-              </datalist>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className={labelCls}>Colour</label>
-                <input
-                  value={draft.color}
-                  onChange={(e) => set("color", e.target.value)}
-                  className={field}
-                />
-              </div>
-              <div>
-                <label className={labelCls}>Pattern</label>
-                <input
-                  value={draft.pattern}
-                  onChange={(e) => set("pattern", e.target.value)}
-                  className={field}
-                />
-              </div>
-            </div>
-            <div>
-              <label className={labelCls}>Brand</label>
-              <input
-                value={draft.brand}
-                onChange={(e) => set("brand", e.target.value)}
-                className={field}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>Tags (comma separated)</label>
-              <input
-                value={draft.tags}
-                onChange={(e) => set("tags", e.target.value)}
-                placeholder="new-arrival, handloom"
-                className={field}
-              />
-            </div>
-            <div>
-              <label className={labelCls}>Care instructions</label>
-              <textarea
-                rows={3}
-                value={draft.careInstructions}
-                onChange={(e) => set("careInstructions", e.target.value)}
-                className={field}
-              />
-            </div>
-          </div>
-        </Card>
+          </Section>
+        </div>
       </div>
     </form>
   );

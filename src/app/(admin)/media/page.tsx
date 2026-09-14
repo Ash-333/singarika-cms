@@ -13,7 +13,10 @@ export default async function MediaPage() {
 
   return (
     <>
-      <PageHeader title="Media" subtitle="Images stored in Cloudinary" />
+      <PageHeader
+        title="Photos"
+        subtitle="Every image used across the shop and the blog. A description helps shoppers using a screen reader, and helps Google."
+      />
       <MediaLibrary
         items={media.map((m) => ({
           id: m.id,

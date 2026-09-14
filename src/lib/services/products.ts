@@ -2,7 +2,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { uniqueSlug } from "@/lib/slug";
-import { rupeesToPaise } from "@/lib/money";
+import { rupeesToPaisa } from "@/lib/money";
 import { upsertTags } from "@/lib/services/tags";
 import { productCreateSchema, productUpdateSchema } from "@/lib/validation";
 
@@ -23,12 +23,12 @@ function scalarFields(input: Partial<CreateInput>) {
     ...(input.shortDescription !== undefined && { shortDescription: input.shortDescription }),
     ...(input.status !== undefined && { status: input.status }),
     ...(input.isFeatured !== undefined && { isFeatured: input.isFeatured }),
-    ...(input.basePrice !== undefined && { basePrice: rupeesToPaise(input.basePrice) }),
+    ...(input.basePrice !== undefined && { basePrice: rupeesToPaisa(input.basePrice) }),
     ...(input.compareAtPrice !== undefined && {
-      compareAtPrice: input.compareAtPrice == null ? null : rupeesToPaise(input.compareAtPrice),
+      compareAtPrice: input.compareAtPrice == null ? null : rupeesToPaisa(input.compareAtPrice),
     }),
     ...(input.costPrice !== undefined && {
-      costPrice: input.costPrice == null ? null : rupeesToPaise(input.costPrice),
+      costPrice: input.costPrice == null ? null : rupeesToPaisa(input.costPrice),
     }),
     ...(input.fabric !== undefined && { fabric: input.fabric }),
     ...(input.workType !== undefined && { workType: input.workType }),
@@ -54,7 +54,7 @@ export async function createProduct(input: CreateInput, userId: string) {
       data: {
         ...scalarFields(input),
         name: input.name,
-        basePrice: rupeesToPaise(input.basePrice),
+        basePrice: rupeesToPaisa(input.basePrice),
         slug,
         publishedAt: input.status === "ACTIVE" ? new Date() : null,
         categories: { create: input.categoryIds.map((categoryId) => ({ categoryId })) },
@@ -73,7 +73,7 @@ export async function createProduct(input: CreateInput, userId: string) {
             color: v.color,
             optionLabel: v.optionLabel,
             optionValue: v.optionValue,
-            price: v.price == null ? null : rupeesToPaise(v.price),
+            price: v.price == null ? null : rupeesToPaisa(v.price),
             weightGram: v.weightGram,
             stock: v.stock,
             lowStockAlert: v.lowStockAlert,
@@ -159,7 +159,7 @@ export async function updateProduct(id: string, input: UpdateInput) {
           color: v.color,
           optionLabel: v.optionLabel,
           optionValue: v.optionValue,
-          price: v.price == null ? null : rupeesToPaise(v.price),
+          price: v.price == null ? null : rupeesToPaisa(v.price),
           weightGram: v.weightGram,
           lowStockAlert: v.lowStockAlert,
           allowBackorder: v.allowBackorder,
